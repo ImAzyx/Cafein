@@ -14,22 +14,21 @@ protocol PowerAssertionControlling: AnyObject {
 
 /// Real implementation backed by IOKit.
 ///
-/// Uses `PreventSystemSleep` with `AppliesToLidClose = true` so the assertion
-/// holds even when the MacBook lid is closed on battery (the same technique
-/// used by Lungo and Amphetamine). No subprocess, no sudo.
+/// Uses `PreventSystemSleep` which prevents idle sleep and system sleep on AC.
+/// On battery + lid closed, macOS enforces sleep at the firmware level regardless
+/// of any power assertion — this is an Apple Silicon / macOS 14+ restriction.
 final class IOKitPowerAssertion: PowerAssertionControlling {
     private var assertionID: IOPMAssertionID = 0
     private(set) var isHeld = false
 
     func acquire(reason: String) -> Bool {
         guard !isHeld else { return true }
-        let properties: [String: Any] = [
-            kIOPMAssertionTypeKey as String: kIOPMAssertionTypePreventSystemSleep as String,
-            kIOPMAssertionLevelKey as String: NSNumber(value: kIOPMAssertionLevelOn),
-            kIOPMAssertionNameKey as String: reason,
-            "AppliesToLidClose": kCFBooleanTrue as Any
-        ]
-        let result = IOPMAssertionCreateWithProperties(properties as CFDictionary, &assertionID)
+        let result = IOPMAssertionCreateWithName(
+            kIOPMAssertionTypePreventSystemSleep as CFString,
+            IOPMAssertionLevel(kIOPMAssertionLevelOn),
+            reason as CFString,
+            &assertionID
+        )
         isHeld = (result == kIOReturnSuccess)
         return isHeld
     }
