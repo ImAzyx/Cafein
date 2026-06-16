@@ -92,7 +92,11 @@ final class SleepManager {
     }
 
     deinit {
-        timer?.invalidate()
-        assertion.release()
+        // deinit is nonisolated in Swift 6; safe to assume main actor here because
+        // SleepManager is @MainActor-isolated and can only be released from the main actor.
+        MainActor.assumeIsolated {
+            timer?.invalidate()
+            assertion.release()
+        }
     }
 }
