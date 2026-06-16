@@ -24,7 +24,7 @@ final class IOKitPowerAssertion: PowerAssertionControlling {
     func acquire(reason: String) -> Bool {
         guard !isHeld else { return true }
         let result = IOPMAssertionCreateWithName(
-            kIOPMAssertionTypePreventSystemSleep as CFString,
+            "PreventUserIdleSystemSleep" as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
             reason as CFString,
             &assertionID
