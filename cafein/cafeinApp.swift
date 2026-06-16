@@ -17,7 +17,6 @@ struct cafeinApp: App {
 private struct MenuBarIcon: View {
     let manager: SleepManager
     var body: some View {
-        Image(systemName: "cup.and.saucer.fill")
-            .opacity(manager.isActive ? 1 : 0.3)
+        Image(systemName: manager.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
     }
 }

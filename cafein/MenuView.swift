@@ -40,7 +40,7 @@ struct MenuView: View {
         HStack(spacing: 6) {
             Image(systemName: "cup.and.saucer.fill")
                 .foregroundStyle(.tint)
-            Text("cafein")
+            Text("Cafein ⚡️")
                 .font(.headline)
             Spacer()
         }
