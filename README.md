@@ -1,81 +1,135 @@
-# cafein ☕
+<div align="center">
 
-A tiny macOS **menu bar** app that prevents your Mac from sleeping, with timer
-options. No dock icon, no `sudo`, no shell commands — it uses native **IOKit
-power assertions**.
+# ☕ Cafein ⚡️
 
-## Features
+**Keep your Mac awake. Nothing more.**
 
-- Menu bar cup icon that fills when active (status indicator).
-- Toggle: **Enable No Sleep** / **Disable No Sleep**.
-- Timer options: **30 minutes**, **1 hour**, **2 hours**, **Until disabled**.
-- Live status panel: ON/OFF and remaining time.
-- macOS notification when a timer expires and sleep is re-enabled.
-- Quit button. No dock icon.
+<br/>
+
+[![macOS](https://img.shields.io/badge/macOS-14%20Sonoma%2B-black?style=for-the-badge&logo=apple&logoColor=white)](https://www.apple.com/macos/sonoma/)
+[![Swift](https://img.shields.io/badge/Swift-5.9-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
+[![SwiftUI](https://img.shields.io/badge/SwiftUI-%E2%9C%93-0066FF?style=for-the-badge&logo=swift&logoColor=white)](https://developer.apple.com/xcode/swiftui/)
+[![IOKit](https://img.shields.io/badge/IOKit-no%20sudo-34C759?style=for-the-badge)](https://developer.apple.com/documentation/iokit)
+
+<br/>
+
+*A menu bar app. A coffee cup. A single job.*
+
+</div>
+
+---
+
+## The idea
+
+Your Mac falls asleep mid-download, mid-render, mid-video call. `caffeinate` fixes it but lives in a terminal tab you forget to close. Cafein lives in the menu bar, out of your dock, and works with one click.
+
+No subprocess. No `sudo pmset`. No preferences window. No dock icon. Just an IOKit power assertion and a cup that fills when it's on.
+
+---
+
+## What you get
+
+| | |
+|---|---|
+| **☕ → ☕ filled** | Menu bar icon that shows state at a glance |
+| **One-click toggle** | Enable / Disable No Sleep |
+| **Timer options** | 30 min · 1 h · 2 h · Until disabled |
+| **Live countdown** | Remaining time in the panel, updating every second |
+| **Auto-notify** | macOS notification when a timer expires |
+| **Clean exit** | IOKit assertion always released — no leftover wake locks |
+
+---
 
 ## Requirements
 
-- macOS **14 (Sonoma)** or later
-- **Xcode 15** or later (to build)
+- **macOS 14 (Sonoma)** or later
+- **Xcode 15+** to build from source
 
-## How it works
-
-While active, cafein creates a `kIOPMAssertionTypeNoIdleSleep` IOKit power
-assertion and releases it when you disable it or a timer ends. This prevents
-**system** idle sleep while still allowing the display to dim. No elevated
-privileges, no subprocess, no `pmset`.
-
-## Project layout
-
-```
-cafein/
-├── cafein/
-│   ├── cafeinApp.swift          # @main App + MenuBarExtra + status icon
-│   ├── SleepManager.swift       # @Observable state machine + countdown timer
-│   ├── PowerAssertion.swift     # PowerAssertionControlling + IOKit implementation
-│   ├── NotificationService.swift# AutoDisableNotifying + UserNotifications impl
-│   ├── MenuView.swift           # dropdown panel UI
-│   ├── TimeFormatting.swift     # remaining-seconds → display string
-│   └── Info.plist               # LSUIElement = YES (no dock icon)
-└── cafeinTests/
-    └── SleepManagerTests.swift  # state-machine + formatter unit tests
-```
+---
 
 ## Build & run
-
-### 1. Open the project
 
 ```bash
 open cafein.xcodeproj
 ```
 
-### 2. Sign the target
+1. **Sign it** — Target `cafein` → *Signing & Capabilities* → pick your Team.  
+   Required so `UserNotifications` can actually deliver alerts.
 
-Target `cafein` → **Signing & Capabilities** → select your **Team** under
-*Automatically manage signing*. A signed bundle is required for
-`UserNotifications` to deliver.
+2. **Run** — `⌘R` with the `cafein` scheme and a *My Mac* destination.  
+   A cup icon appears in the menu bar. No dock icon. That's it.
 
-### 3. Run
-
-- Select the `cafein` scheme and a **My Mac** destination, then **⌘R**.
-- A cup icon appears in the menu bar; there is **no** dock icon.
-- Click it to open the panel.
-
-### Run the tests
-
-In Xcode press **⌘U**, or from the command line:
+### Tests
 
 ```bash
-xcodebuild test -project cafein.xcodeproj -scheme cafein -destination 'platform=macOS'
+xcodebuild test \
+  -project cafein.xcodeproj \
+  -scheme cafein \
+  -destination 'platform=macOS'
 ```
 
-## Verifying it really prevents sleep
+Or just `⌘U` in Xcode.
 
-With No Sleep ON, run:
+---
+
+## Verify it's actually working
+
+With No Sleep **ON**, open a terminal and run:
 
 ```bash
 pmset -g assertions
 ```
 
-You should see a `PreventUserIdleSystemSleep` assertion attributed to `cafein`.
-Disable No Sleep (or let the timer expire) and the entry disappears.
+You'll see a `PreventUserIdleSystemSleep` assertion attributed to `cafein`. Disable it (or let a timer run out) and the entry disappears.
+
+---
+
+## How it works
+
+Sleep prevention happens entirely in `SleepManager.swift`. On enable, it acquires a `PreventUserIdleSystemSleep` IOKit power assertion — the same one `caffeinate -i` uses under the hood. On disable (manual or timer expiry), it releases it. The assertion is always cleaned up: on toggle off, on timer end, and in `deinit`.
+
+```
+MenuView ──action──▶ SleepManager ──────────▶ IOKit assertion
+   ▲                     │                    (create / release)
+   │  @Observable        ├──▶ Timer tick
+   └─── re-render        └──▶ NotificationService (on expiry)
+
+cafeinApp icon ◀── isActive ── SleepManager
+```
+
+> **One caveat:** on Apple Silicon with the lid closed on battery, macOS enforces sleep at the firmware level regardless of any user-space assertion. That's a hardware restriction, not a bug.
+
+---
+
+## Project layout
+
+```
+cafein/
+├── cafeinApp.swift             @main · MenuBarExtra · status cup icon
+├── SleepManager.swift          @Observable state machine + countdown timer
+├── PowerAssertion.swift        IOKit wrapper behind a testable protocol
+├── NotificationService.swift   UNUserNotificationCenter wrapper
+├── MenuView.swift              dropdown panel — status · toggle · durations
+└── TimeFormatting.swift        mm:ss / h:mm display formatting
+
+cafeinTests/
+└── SleepManagerTests.swift     state machine + formatter unit tests
+```
+
+`SleepManager` accepts injected `PowerAssertionControlling` and `AutoDisableNotifying` so the full enable → countdown → auto-disable → notify flow is testable without touching IOKit or the real notification center.
+
+---
+
+## Limitations
+
+- Display sleep is intentionally **not** prevented — only system idle sleep. The screen will still dim.
+- No launch-at-login (intentional — out of scope).
+- On Apple Silicon + battery + closed lid, firmware wins. No app can override this.
+
+---
+
+<div align="center">
+
+Built with SwiftUI · IOKit · zero dependencies
+
+</div>
