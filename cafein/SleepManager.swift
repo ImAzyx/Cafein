@@ -22,6 +22,7 @@ final class SleepManager {
     private let notifier: AutoDisableNotifying
     private let autoStartTimer: Bool
     private var timer: Timer?
+    private var endDate: Date?
 
     init(
         assertion: PowerAssertionControlling = IOKitPowerAssertion(),
@@ -47,9 +48,13 @@ final class SleepManager {
         if let duration {
             mode = .timed
             remainingSeconds = Int(duration)
-            if autoStartTimer { startTimer() }
+            if autoStartTimer {
+                endDate = Date().addingTimeInterval(duration)
+                startTimer()
+            }
         } else {
             mode = .manual
+            endDate = nil
             remainingSeconds = nil
         }
     }
@@ -62,18 +67,24 @@ final class SleepManager {
         mode = .manual
         remainingSeconds = nil
         selectedDuration = nil
+        endDate = nil
         if notify { notifier.notifyAutoDisabled() }
     }
 
-    /// Decrement the countdown; auto-disables (with notification) at zero.
-    /// Separated from the `Timer` so tests can drive it deterministically.
+    /// Update the countdown. In production uses wall-clock time so the display
+    /// stays accurate after the system wakes from sleep. Tests use the `by`
+    /// decrement path (no `endDate` set when `autoStartTimer == false`).
     func advanceTimer(by seconds: Int) {
-        guard mode == .timed, let remaining = remainingSeconds else { return }
-        let next = remaining - seconds
-        if next <= 0 {
-            disable(notify: true)
+        guard mode == .timed else { return }
+        if let end = endDate {
+            let remaining = Int(end.timeIntervalSinceNow)
+            if remaining <= 0 { disable(notify: true) }
+            else { remainingSeconds = remaining }
         } else {
-            remainingSeconds = next
+            guard let remaining = remainingSeconds else { return }
+            let next = remaining - seconds
+            if next <= 0 { disable(notify: true) }
+            else { remainingSeconds = next }
         }
     }
 
