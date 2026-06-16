@@ -9,11 +9,12 @@ struct cafeinApp: App {
             MenuView(manager: manager)
         } label: {
             Image(systemName: manager.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
+                .padding(.top, 5)
+                .padding(.trailing, 5)
                 .overlay(alignment: .topTrailing) {
                     Circle()
-                        .fill(manager.isActive ? Color.green : Color.secondary.opacity(0.5))
-                        .frame(width: 5, height: 5)
-                        .offset(x: 3, y: -1)
+                        .fill(manager.isActive ? Color.green : Color.gray.opacity(0.5))
+                        .frame(width: 6, height: 6)
                 }
         }
         .menuBarExtraStyle(.window)
