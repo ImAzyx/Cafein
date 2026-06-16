@@ -8,14 +8,8 @@ struct cafeinApp: App {
         MenuBarExtra {
             MenuView(manager: manager)
         } label: {
-            Image(systemName: manager.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
-                .padding(.top, 5)
-                .padding(.trailing, 5)
-                .overlay(alignment: .topTrailing) {
-                    Circle()
-                        .fill(manager.isActive ? Color.green : Color.gray.opacity(0.5))
-                        .frame(width: 6, height: 6)
-                }
+            Image(systemName: "cup.and.saucer.fill")
+                .opacity(manager.isActive ? 1 : 0.3)
         }
         .menuBarExtraStyle(.window)
     }
