@@ -40,6 +40,14 @@ No subprocess. No `sudo pmset`. No preferences window. No dock icon. Just an IOK
 
 ---
 
+## Install
+
+Grab the latest **`Cafein.dmg`** from the [Releases page](https://github.com/ImAzyx/Cafein/releases), open it, and drag **Cafein** into your Applications folder. The app is signed and notarized by Apple, so it opens with no Gatekeeper warnings.
+
+A coffee cup appears in your menu bar — no Dock icon. That's it.
+
+---
+
 ## Requirements
 
 - **macOS 14 (Sonoma)** or later
@@ -117,6 +125,50 @@ cafeinTests/
 ```
 
 `SleepManager` accepts injected `PowerAssertionControlling` and `AutoDisableNotifying` so the full enable → countdown → auto-disable → notify flow is testable without touching IOKit or the real notification center.
+
+---
+
+## Releasing
+
+Releases are **signed and notarized by GitHub Actions** and published as a DMG on the [Releases page](https://github.com/ImAzyx/Cafein/releases). Cutting one needs **no Apple credentials on your machine** — anyone with write access can do it, and it's free (macOS CI is unlimited on public repos).
+
+**Cut a release** — on `main`, with a clean working tree:
+
+```bash
+bun install            # once: release-tooling deps
+gh auth login          # once: lets the tool publish the release
+
+bun release            # pick the version → notes → tag → GitHub Release
+bun release --yes      # same, but no prompts (accepts the suggested version)
+bun release --dry-run  # preview everything, change nothing
+```
+
+`bun release` reads your [Conventional Commits](https://www.conventionalcommits.org) since the last tag, picks the version bump, generates the notes, bumps the version, tags `vX.Y.Z`, pushes `main`, and creates the GitHub Release. The `release.yml` workflow then builds, signs, notarizes, and attaches `Cafein.dmg` — usually within a few minutes.
+
+### CI signing setup (one-time, by the certificate owner)
+
+Signing uses encrypted **repo Secrets**, so the key never leaves GitHub. Under *Settings → Secrets and variables → Actions*, add:
+
+| Secret | What it is |
+|---|---|
+| `DEVELOPER_ID_CERT_P12` | base64 of your exported *Developer ID Application* certificate + private key (`.p12`) |
+| `DEVELOPER_ID_CERT_PASSWORD` | the password set on that `.p12` |
+| `APPLE_TEAM_ID` | your 10-character Team ID |
+| `NOTARY_API_KEY_P8` | base64 of your App Store Connect API key (`.p8`) |
+| `NOTARY_KEY_ID` | the API key's Key ID (10 chars) |
+| `NOTARY_ISSUER_ID` | the API key's Issuer ID (a UUID) |
+
+The notarization API key is a **Team key** from App Store Connect → *Users and Access → Integrations → App Store Connect API* (role *Developer* is enough). It's team-level — no personal Apple ID or password involved.
+
+To produce `DEVELOPER_ID_CERT_P12`: in **Keychain Access**, right-click your *Developer ID Application* identity → *Export* → save a `.p12`, then:
+
+```bash
+base64 -i Certificates.p12 | pbcopy   # paste into the secret
+```
+
+### Build a DMG locally (optional)
+
+`bun release --local-dmg` (or `tools/release.sh` directly) builds + notarizes on your Mac — handy for testing without GitHub. It needs your certificate locally plus a one-time `xcrun notarytool store-credentials cafein-notary …` (see the script header).
 
 ---
 

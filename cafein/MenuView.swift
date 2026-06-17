@@ -8,7 +8,7 @@ struct MenuView: View {
 
     /// Duration choices. `seconds == nil` means "until disabled manually".
     private struct DurationOption: Identifiable {
-        let id = UUID()
+        var id: String { label }
         let label: String
         let seconds: TimeInterval?
     }
