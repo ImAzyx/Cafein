@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Cafein</title>
+    <item>
+      <title>1.0.2</title>
+      <pubDate>Wed, 17 Jun 2026 10:41:12 +0000</pubDate>
+      <sparkle:version>3</sparkle:version>
+      <sparkle:shortVersionString>1.0.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>https://github.com/ImAzyx/Cafein/releases/tag/v1.0.2</sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/ImAzyx/Cafein/releases/download/v1.0.2/Cafein.dmg" type="application/octet-stream" sparkle:edSignature="mFiBD+9c4Z3PoK9RhzUdeNjWtf34M6mKRGk7pOp07R1sV6kuqeFuQlAKt79j/qqaIEU0hiv7y9hW+x6gcvNSCg==" length="4582984" />
+    </item>
+  </channel>
+</rss>
