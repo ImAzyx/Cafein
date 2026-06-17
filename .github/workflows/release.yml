@@ -16,10 +16,11 @@ jobs:
   sign-and-attach:
     runs-on: macos-latest
     steps:
-      - name: Checkout the released tag
+      - name: Checkout main
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: main
+          fetch-depth: 0
 
       - name: Import Developer ID certificate
         env:
@@ -76,3 +77,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "${{ github.event.release.tag_name }}" "$RUNNER_TEMP/Cafein.dmg" --clobber
+
+      - name: Sign update & publish appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          SIGN=$(find ~/Library/Developer/Xcode/DerivedData -name sign_update -path '*artifacts/sparkle*' | head -1)
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle_key"
+          SIG_ATTRS=$("$SIGN" --ed-key-file "$RUNNER_TEMP/sparkle_key" "$RUNNER_TEMP/Cafein.dmg")
+          rm -f "$RUNNER_TEMP/sparkle_key"
+          SHORT="${TAG#v}"
+          BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$RUNNER_TEMP/export/cafein.app/Contents/Info.plist")
+          URL="https://github.com/$REPO/releases/download/$TAG/Cafein.dmg"
+          NOTES="https://github.com/$REPO/releases/tag/$TAG"
+          PUBDATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">\n  <channel>\n    <title>Cafein</title>\n    <item>\n      <title>%s</title>\n      <pubDate>%s</pubDate>\n      <sparkle:version>%s</sparkle:version>\n      <sparkle:shortVersionString>%s</sparkle:shortVersionString>\n      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>\n      <sparkle:releaseNotesLink>%s</sparkle:releaseNotesLink>\n      <enclosure url="%s" type="application/octet-stream" %s />\n    </item>\n  </channel>\n</rss>\n' "$SHORT" "$PUBDATE" "$BUILD" "$SHORT" "$NOTES" "$URL" "$SIG_ATTRS" > appcast.xml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appcast.xml
+          git commit -m "chore: update appcast for $TAG" || echo "appcast unchanged"
+          git push origin main

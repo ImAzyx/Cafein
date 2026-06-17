@@ -26,5 +26,11 @@
 	<string>public.app-category.utilities</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/ImAzyx/Cafein/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>7Fe0Ls2RUjHdZPaJB//2tQ7jYw6sr7+ulQ44WwzP/Zo=</string>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
 </dict>
 </plist>

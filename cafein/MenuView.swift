@@ -1,3 +1,5 @@
+import Combine
+import Sparkle
 import SwiftUI
 
 /// The dropdown panel shown from the menu bar. Reads `SleepManager` (observation
@@ -5,6 +7,7 @@ import SwiftUI
 /// methods in response to user actions.
 struct MenuView: View {
     let manager: SleepManager
+    let updater: SPUUpdater
 
     /// Duration choices. `seconds == nil` means "until disabled manually".
     private struct DurationOption: Identifiable {
@@ -132,15 +135,19 @@ struct MenuView: View {
     // MARK: - Footer
 
     private var footer: some View {
-        Button {
-            NSApplication.shared.terminate(nil)
-        } label: {
-            Label("Quit cafein", systemImage: "power")
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 6) {
+            CheckForUpdatesView(updater: updater)
+
+            Button {
+                NSApplication.shared.terminate(nil)
+            } label: {
+                Label("Quit Cafein", systemImage: "power")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .keyboardShortcut("q")
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
-        .keyboardShortcut("q")
     }
 
     // MARK: - Helpers
@@ -159,6 +166,42 @@ struct MenuView: View {
     }
 }
 
+/// Menu row that triggers a Sparkle update check, disabled while one is in flight.
+private struct CheckForUpdatesView: View {
+    @StateObject private var model: CheckForUpdatesModel
+    private let updater: SPUUpdater
+
+    init(updater: SPUUpdater) {
+        self.updater = updater
+        _model = StateObject(wrappedValue: CheckForUpdatesModel(updater: updater))
+    }
+
+    var body: some View {
+        Button {
+            updater.checkForUpdates()
+        } label: {
+            Label("Check for Updates…", systemImage: "arrow.down.circle")
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .disabled(!model.canCheckForUpdates)
+    }
+}
+
+private final class CheckForUpdatesModel: ObservableObject {
+    @Published var canCheckForUpdates = false
+
+    init(updater: SPUUpdater) {
+        updater.publisher(for: \.canCheckForUpdates).assign(to: &$canCheckForUpdates)
+    }
+}
+
 #Preview {
-    MenuView(manager: SleepManager(autoStartTimer: false))
+    MenuView(
+        manager: SleepManager(autoStartTimer: false),
+        updater: SPUStandardUpdaterController(
+            startingUpdater: false, updaterDelegate: nil, userDriverDelegate: nil
+        ).updater
+    )
 }

@@ -46,6 +46,8 @@ Grab the latest **`Cafein.dmg`** from the [Releases page](https://github.com/ImA
 
 A coffee cup appears in your menu bar — no Dock icon. That's it.
 
+After the first install Cafein **updates itself** — it checks for new versions and offers to install them (or use **Check for Updates…** in the panel). Powered by [Sparkle](https://sparkle-project.org).
+
 ---
 
 ## Requirements
@@ -157,6 +159,7 @@ Signing uses encrypted **repo Secrets**, so the key never leaves GitHub. Under *
 | `NOTARY_API_KEY_P8` | base64 of your App Store Connect API key (`.p8`) |
 | `NOTARY_KEY_ID` | the API key's Key ID (10 chars) |
 | `NOTARY_ISSUER_ID` | the API key's Issuer ID (a UUID) |
+| `SPARKLE_PRIVATE_KEY` | your Sparkle EdDSA private key (`generate_keys -x`) — signs auto-updates |
 
 The notarization API key is a **Team key** from App Store Connect → *Users and Access → Integrations → App Store Connect API* (role *Developer* is enough). It's team-level — no personal Apple ID or password involved.
 

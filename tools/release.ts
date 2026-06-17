@@ -226,7 +226,11 @@ async function main() {
     }
   }
 
-  if (hasRemote) await runOrNull("git", ["fetch", "--tags"]);
+  if (hasRemote) {
+    await runOrNull("git", ["fetch", "--tags"]);
+    // CI commits the updated appcast to main after each release, so sync before tagging.
+    if (!DRY_RUN) await runOrNull("git", ["pull", "--rebase"]);
+  }
 
   // --- Resolve current version + commits ---
   const proj = readFileSync(PBXPROJ, "utf8");
